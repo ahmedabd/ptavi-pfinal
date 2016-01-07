@@ -30,7 +30,6 @@ class EchoHandler(socketserver.DatagramRequestHandler):
             line = self.rfile.read()
             linea = line.decode('utf-8')
             linea_lista = linea.split()
-            print(linea_lista)
 
             print("El servidor Proxy nos manda " + line.decode('utf-8'))
             if not line:
@@ -43,6 +42,8 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 mensaje += self.wfile.write((bytes(linea_lista[7], 'utf-8')) + b'\r\n')
                 mensaje += self.wfile.write((bytes(linea_lista[8], 'utf-8')) + b'\r\n')
                 mensaje += self.wfile.write((bytes(linea_lista[9] + ' ' + linea_lista[10] + ' ' + linea_lista[11], 'utf-8')) + b'\r\n\r\n')
+
+            
 if __name__ == "__main__":
     # Creamos servidor de eco y escuchamos
     serv = socketserver.UDPServer((ip_server, int(puerto_server)), EchoHandler)
