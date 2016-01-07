@@ -60,7 +60,12 @@ if METODO == 'INVITE':
     RCV = datos_lista[0:12]
 
     if RCV == ['SIP/2.0 100 Trying', '', 'SIP/2.0 180 Ring', '', 'SIP/2.0 200 OK', 'Content-Type:application/sdp', '', 'v=0', 'o=ahmed@gmail.es', 's=misesion', 't=0', 'm=audio 7000 RTP']:
+        print("Enviando: " + 'ACK')
         my_socket.send(bytes(LINE3, 'utf-8'))
+        data = my_socket.recv(1024)
+        datos = data.decode('utf-8')
+        datos_lista = datos.split('\r\n')
+        print('Recibido -- ', datos)
 
 print("Terminando socket...")
 
