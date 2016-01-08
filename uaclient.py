@@ -27,7 +27,7 @@ with open(CONFIG, 'r') as file1:
 LINE1 = METODO + ' ' + 'sip:' + usuario + ':' + puerto_proxy + ' ' + 'SIP/2.0\r\n'
 AUTORIZACION = 'Authorization: response="123123"'
 LINE2 = METODO + ' ' + 'sip:' + usuario + ':' + puerto_proxy + ' ' + 'SIP/2.0\r\n' + 'Content-Type: application/sdp' + '\r\n\r\n'
-LINE2 += 'v=0' + '\r\n' + 'o=' + usuario + '\r\n' +  's=misesion' + '\r\n' +  't=0' + '\r\n' + 'm=audio' + ' ' + puerto_rtp + ' ' + 'RTP'
+LINE2 += 'v=0' + '\r\n' + 'o=' + usuario + ' ' + ip_server + '\r\n' +  's=misesion' + '\r\n' +  't=0' + '\r\n' + 'm=audio' + ' ' + puerto_rtp + ' ' + 'RTP'
 LINE3 = 'ACK ' + 'sip:' + usuario + ' ' + 'SIP/2.0' + '\r\n\r\n'
 # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -59,7 +59,7 @@ if METODO == 'INVITE':
     print('Recibido -- ', datos)
     RCV = datos_lista[0:12]
 
-    if RCV == ['SIP/2.0 100 Trying', '', 'SIP/2.0 180 Ring', '', 'SIP/2.0 200 OK', 'Content-Type:application/sdp', '', 'v=0', 'o=ahmed@gmail.es', 's=misesion', 't=0', 'm=audio 7000 RTP']:
+    if RCV == ['SIP/2.0 100 Trying', '', 'SIP/2.0 180 Ring', '', 'SIP/2.0 200 OK', 'Content-Type:application/sdp', '', 'v=0', 'o=ahmed@gmail.es', '127.0.0.1', 's=misesion', 't=0 m=audio 7001']:
         print("Enviando: " + 'ACK')
         my_socket.send(bytes(LINE3, 'utf-8'))
         data = my_socket.recv(1024)
