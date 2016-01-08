@@ -17,6 +17,7 @@ with open(CONFIG, 'r') as fich_proxy:
     data_path = lineas2[2].split()[1].split('"')[1]
     passwd_path = lineas2[2].split()[2].split('"')[1]
     log_path2 = lineas2[3].split()[1].split('"')[1]
+
 with open('ua2.xml', 'r') as fich_serv:
     lineas3 = fich_serv.readlines()
     usuario3 = lineas3[1].split()[1].split('"')[1]
@@ -42,7 +43,7 @@ with open('ua1.xml', 'r') as fich_client:
     audio_path = lineas[6].split()[1].split('"')[1]
 
 LINE2 = 'INVITE' + ' ' + 'sip:' + usuario + ':' + puerto_proxy + ' ' + 'SIP/2.0\r\n' + 'Content-Type: application/sdp' + '\r\n\r\n'
-LINE2 += 'v=0' + '\r\n' + 'o=' + usuario + '\r\n' +  's=misesion' + '\r\n' +  't=0' + '\r\n' + 'm=audio' + ' ' + puerto_rtp + ' ' + 'RTP'
+LINE2 += 'v=0' + '\r\n' + 'o=' + usuario + ' ' + ip_server + '\r\n' +  's=misesion' + '\r\n' +  't=0' + '\r\n' + 'm=audio' + ' ' + puerto_rtp + ' ' + 'RTP'
 LINE3 = 'ACK ' + 'sip:' + usuario + ' ' + 'SIP/2.0' + '\r\n\r\n'
 
 
@@ -77,14 +78,14 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 print('Recibido -- ', datos)
                 RCV = datos_lista[0:12]
 
-                if RCV == ['SIP/2.0 100 Trying', '', 'SIP/2.0 180 Ring', '', 'SIP/2.0 200 OK', 'Content-Type:application/sdp', '', 'v=0', 'o=ahmed@gmail.es', 's=misesion', 't=0', 'm=audio 7000 RTP']:
+                if RCV == ['SIP/2.0 100 Trying', '', 'SIP/2.0 180 Ring', '', 'SIP/2.0 200 OK', 'Content-Type:application/sdp', '', 'v=0', 'o=ahmed@gmail.es 127.0.0.1', 's=misesion', 't=0', 'm=audio 7001 RTP']:
                     mensaje = self.wfile.write(b'SIP/2.0 100 Trying' + b'\r\n\r\n' + b'SIP/2.0 180 Ring' + b'\r\n\r\n' + b'SIP/2.0 200 OK' + b'\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[3] + linea_lista[4], 'utf-8')) + b'\r\n\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[5], 'utf-8')) + b'\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[6], 'utf-8')) + b'\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[7], 'utf-8')) + b'\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[8], 'utf-8')) + b'\r\n')
-                    mensaje += self.wfile.write((bytes(linea_lista[9] + ' ' + linea_lista[10] + ' ' + linea_lista[11], 'utf-8')) + b'\r\n\r\n')
+                    mensaje += self.wfile.write((bytes(linea_lista[9] + ' ' + linea_lista[10] + ' ' + puerto_rtp3, 'utf-8')) + b'\r\n\r\n')
 
             if linea_lista[0] == 'ACK':
                 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -92,13 +93,6 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 my_socket.connect((ip_server3, int(puerto_server3)))
                 print("Enviando: " + 'ACK')
                 my_socket.send(bytes(LINE3, 'utf-8') + b'\r\n\r\n')
-                data = my_socket.recv(1024)
-                datos = data.decode('utf-8')
-                datos_lista = datos.split('\r\n')
-                print('Recibido -- ', datos)
-                aEjecutar = './mp32rtp -i 127.0.0.1 -p 23032 < ' + FICH_AUDIO
-                print('Vamos a ejecutar', aEjecutar)
-                os.system(aEjecutar)
 
                     
                     
