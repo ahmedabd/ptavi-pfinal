@@ -5,6 +5,8 @@ import socketserver
 import sys
 import os
 import socket
+import time
+import json
 
 CONFIG = sys.argv[1]
 FICH_AUDIO = 'cancion.mp3'
@@ -52,6 +54,8 @@ class EchoHandler(socketserver.DatagramRequestHandler):
     Recibimos peticiones SIP y enviamos mensajes o servicios
     """
 
+    dicc = {}
+
     def handle(self):
         while 1:
             line = self.rfile.read()
@@ -66,6 +70,18 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 self.wfile.write(b'WWW Authenticate: nonce ="898989"' + b'\r\n\r\n')
             if linea_lista[0] == 'REGISTER' and len(linea_lista) == 7:
                 self.wfile.write(b'SIP/2.0 200 OK' + b'\r\n\r\n')
+                print(linea_lista)
+                if linea_lista[4] == '0':
+                    (registro, direccion, mensaje, expires, tiempo, autorizacion, response) = linea_lista
+                    del self.dicc[direccion]
+                    print(self.dicc)
+                    self.register2json()
+                elif linea_lista[4] > '0':
+                    ip = self.client_address[0]
+                    (registro, direccion, mensaje, expires, tiempo, autorizacion, response) = linea_lista
+                    self.dicc[direccion] = [ip, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time() + int(tiempo)))]
+                    print(self.dicc)
+                    self.register2json()
             if linea_lista[0] == 'INVITE':
                 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -109,6 +125,23 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 
                 if RCV == ['SIP/2.0 200 OK']:
                     mensaje = self.wfile.write(b'SIP/2.0 200 OK' + b'\r\n\r\n')
+
+    def register2json(self):
+        """
+        Registra usuarios en un fichero json
+        """
+        with open(data_path, 'w') as data_base:
+            json.dump(self.dicc, data_base, indent=4, separators=(',', ':'))
+
+    def json2register(self):
+        """
+        Dependiendo de si exista o no el fichero el método ejecutará una cosa u otra
+        """
+        try:
+            with open(data_path, 'w') as data_base:
+                self.dicc = json.loads(data_base)
+        except:
+            pass
 
 if __name__ == "__main__":
     # Creamos servidor de eco y escuchamos
