@@ -3,11 +3,13 @@
 
 import socket
 import sys
+import os
 
 try:
     CONFIG = sys.argv[1]
     METODO = sys.argv[2]
     OPCION = sys.argv[3]
+    FICH_AUDIO = 'cancion.mp3'
 except IndexError:
     sys.exit('Usage: python3 uaclient.py config method option')
 
@@ -23,12 +25,15 @@ with open(CONFIG, 'r') as file1:
     log_path = lineas[5].split()[1].split('"')[1]
     audio_path = lineas[6].split()[1].split('"')[1]
 
+    dicc = {}
+
 # Contenido que vamos a enviar
 LINE1 = METODO + ' ' + 'sip:' + usuario + ':' + puerto_proxy + ' ' + 'SIP/2.0\r\n'
 AUTORIZACION = 'Authorization: response="123123"'
-LINE2 = METODO + ' ' + 'sip:' + usuario + ':' + puerto_proxy + ' ' + 'SIP/2.0\r\n' + 'Content-Type: application/sdp' + '\r\n\r\n'
+LINE2 = METODO + ' ' + 'sip:' + OPCION + ':' + puerto_proxy + ' ' + 'SIP/2.0\r\n' + 'Content-Type: application/sdp' + '\r\n\r\n'
 LINE2 += 'v=0' + '\r\n' + 'o=' + usuario + ' ' + ip_server + '\r\n' +  's=misesion' + '\r\n' +  't=0' + '\r\n' + 'm=audio' + ' ' + puerto_rtp + ' ' + 'RTP'
-LINE3 = 'ACK ' + 'sip:' + usuario + ' ' + 'SIP/2.0' + '\r\n\r\n'
+LINE3 = 'ACK ' + 'sip:' + OPCION + ' ' + 'SIP/2.0' + '\r\n\r\n'
+LINE4 = 'BYE ' + 'sip:' + OPCION + ' ' + 'SIP/2.0' + '\r\n\r\n'
 # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -58,17 +63,34 @@ if METODO == 'INVITE':
     datos_lista = datos.split('\r\n')
     print('Recibido -- ', datos)
     RCV = datos_lista[0:12]
+    print(datos_lista)
+    dicc[datos_lista[8].split('=')[1].split()[0]] = [datos_lista[11].split()[1], datos_lista[8].split()[1]]
+    print(dicc)
 
-    if RCV == ['SIP/2.0 100 Trying', '', 'SIP/2.0 180 Ring', '', 'SIP/2.0 200 OK', 'Content-Type:application/sdp', '', 'v=0', 'o=ahmed@gmail.es', '127.0.0.1', 's=misesion', 't=0 m=audio 7001']:
+    if RCV == ['SIP/2.0 100 Trying', '', 'SIP/2.0 180 Ring', '', 'SIP/2.0 200 OK', 'Content-Type: application/sdp', '', 'v=0', 'o=ahmed@gmail.es 127.0.0.1', 's=misesion', 't=0', 'm=audio 7001 RTP']:
         print("Enviando: " + 'ACK')
         my_socket.send(bytes(LINE3, 'utf-8'))
         data = my_socket.recv(1024)
         datos = data.decode('utf-8')
         datos_lista = datos.split('\r\n')
+        print(datos_lista)
         print('Recibido -- ', datos)
+        [puerto_receptor, ip_receptor] = dicc[LINE1.split()[1].split(':')[1]]
+        aEjecutar = './mp32rtp -i ' + ip_receptor + ' ' '-p ' + str(puerto_receptor) + ' ' + '< ' + FICH_AUDIO
+        print('Vamos a ejecutar', aEjecutar)
+        os.system(aEjecutar)
+
+if METODO == 'BYE':
+    print("Enviando: " + METODO)
+    my_socket.send(bytes(LINE4, 'utf-8'))
+    data = my_socket.recv(1024)
+    datos = data.decode('utf-8')
+    datos_lista = datos.split('\r\n')
+    print('Recibido -- ', datos)
+
+
 
 print("Terminando socket...")
-
 # Cerramos todo
 my_socket.close()
 print("Fin.")
