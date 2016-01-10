@@ -40,6 +40,7 @@ class EchoHandler(socketserver.DatagramRequestHandler):
             if not line:
                 break
             if linea_lista[0] == 'INVITE':
+                print(linea_lista)
                 mensaje = self.wfile.write(b'SIP/2.0 100 Trying' + b'\r\n\r\n' + b'SIP/2.0 180 Ring' + b'\r\n\r\n' + b'SIP/2.0 200 OK' + b'\r\n')
                 mensaje += self.wfile.write((bytes(linea_lista[3] + linea_lista[4], 'utf-8')) + b'\r\n\r\n')
                 mensaje += self.wfile.write((bytes(linea_lista[5], 'utf-8')) + b'\r\n')
@@ -54,6 +55,10 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 aEjecutar = './mp32rtp -i ' + ip_receptor + ' ' '-p ' + str(puerto_receptor) + ' ' + '< ' + FICH_AUDIO
                 print('Vamos a ejecutar', aEjecutar)
                 os.system(aEjecutar)
+
+            if linea_lista[0] == 'BYE':
+                mensaje = self.wfile.write(b'SIP/2.0 200 OK' + b'\r\n\r\n')
+                
                 
 
             
