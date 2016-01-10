@@ -45,7 +45,7 @@ with open('ua1.xml', 'r') as fich_client:
 LINE2 = 'INVITE' + ' ' + 'sip:' + usuario + ':' + puerto_proxy + ' ' + 'SIP/2.0\r\n' + 'Content-Type: application/sdp' + '\r\n\r\n'
 LINE2 += 'v=0' + '\r\n' + 'o=' + usuario + ' ' + ip_server + '\r\n' +  's=misesion' + '\r\n' +  't=0' + '\r\n' + 'm=audio' + ' ' + puerto_rtp + ' ' + 'RTP'
 LINE3 = 'ACK ' + 'sip:' + usuario + ' ' + 'SIP/2.0' + '\r\n\r\n'
-
+LINE4 = 'BYE ' + 'sip:' + usuario + ' ' + 'SIP/2.0' + '\r\n\r\n'
 
 class EchoHandler(socketserver.DatagramRequestHandler):
     """
@@ -80,12 +80,12 @@ class EchoHandler(socketserver.DatagramRequestHandler):
 
                 if RCV == ['SIP/2.0 100 Trying', '', 'SIP/2.0 180 Ring', '', 'SIP/2.0 200 OK', 'Content-Type:application/sdp', '', 'v=0', 'o=ahmed@gmail.es 127.0.0.1', 's=misesion', 't=0', 'm=audio 7001 RTP']:
                     mensaje = self.wfile.write(b'SIP/2.0 100 Trying' + b'\r\n\r\n' + b'SIP/2.0 180 Ring' + b'\r\n\r\n' + b'SIP/2.0 200 OK' + b'\r\n')
-                    mensaje += self.wfile.write((bytes(linea_lista[3] + linea_lista[4], 'utf-8')) + b'\r\n\r\n')
+                    mensaje += self.wfile.write((bytes(linea_lista[3] + ' ' +  linea_lista[4], 'utf-8')) + b'\r\n\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[5], 'utf-8')) + b'\r\n')
-                    mensaje += self.wfile.write((bytes(linea_lista[6], 'utf-8')) + b'\r\n')
-                    mensaje += self.wfile.write((bytes(linea_lista[7], 'utf-8')) + b'\r\n')
+                    mensaje += self.wfile.write((bytes(linea_lista[6] + ' ' + linea_lista[7], 'utf-8')) + b'\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[8], 'utf-8')) + b'\r\n')
-                    mensaje += self.wfile.write((bytes(linea_lista[9] + ' ' + linea_lista[10] + ' ' + puerto_rtp3, 'utf-8')) + b'\r\n\r\n')
+                    mensaje += self.wfile.write((bytes(linea_lista[9], 'utf-8')) + b'\r\n')
+                    mensaje += self.wfile.write((bytes(linea_lista[10] + ' ' + puerto_rtp3 + ' ' + linea_lista[12] , 'utf-8')) + b'\r\n\r\n')
 
             if linea_lista[0] == 'ACK':
                 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -94,10 +94,21 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 print("Enviando: " + 'ACK')
                 my_socket.send(bytes(LINE3, 'utf-8') + b'\r\n\r\n')
 
-                    
-                    
+            if linea_lista[0] == 'BYE':
+                my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                my_socket.connect((ip_server3, int(puerto_server3)))
+                print("Enviando: " + 'BYE')
+                my_socket.send(bytes(LINE4, 'utf-8') + b'\r\n\r\n')
+                data = my_socket.recv(1024)
+                datos = data.decode('utf-8')
+                datos_lista = datos.split('\r\n')
+                print('Recibido -- ', datos)
+                RCV = datos_lista[0:1]
 
                 
+                if RCV == ['SIP/2.0 200 OK']:
+                    mensaje = self.wfile.write(b'SIP/2.0 200 OK' + b'\r\n\r\n')
 
 if __name__ == "__main__":
     # Creamos servidor de eco y escuchamos
