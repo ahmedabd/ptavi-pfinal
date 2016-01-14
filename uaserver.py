@@ -21,6 +21,7 @@ with open(CONFIG, 'r') as file3:
     log_path = lineas[5].split()[1].split('"')[1]
     audio_path = lineas[6].split()[1].split('"')[1]
 
+
 class EchoHandler(socketserver.DatagramRequestHandler):
     """
     Recibimos peticiones SIP y enviamos mensajes o servicios
@@ -33,9 +34,6 @@ class EchoHandler(socketserver.DatagramRequestHandler):
             line = self.rfile.read()
             linea = line.decode('utf-8')
             linea_lista = linea.split()
-
-
-
             print("El servidor Proxy nos manda " + line.decode('utf-8'))
             if not line:
                 break
@@ -49,7 +47,6 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 mensaje += self.wfile.write((bytes(linea_lista[9], 'utf-8')) + b'\r\n')
                 mensaje += self.wfile.write((bytes(linea_lista[10] + ' ' + puerto_rtp + ' ' + linea_lista[12], 'utf-8')) + b'\r\n\r\n')
                 self.dicc[linea_lista[6].split('=')[1]] = [linea_lista[11], linea_lista[7]]
-            
             if linea_lista[0] == 'ACK':
                 [puerto_receptor, ip_receptor] = self.dicc[linea_lista[1].split(':')[1]]
                 aEjecutar = './mp32rtp -i ' + ip_receptor + ' ' '-p ' + str(puerto_receptor) + ' ' + '< ' + FICH_AUDIO
@@ -58,10 +55,6 @@ class EchoHandler(socketserver.DatagramRequestHandler):
 
             if linea_lista[0] == 'BYE':
                 mensaje = self.wfile.write(b'SIP/2.0 200 OK' + b'\r\n\r\n')
-                
-                
-
-            
 if __name__ == "__main__":
     # Creamos servidor de eco y escuchamos
     serv = socketserver.UDPServer((ip_server, int(puerto_server)), EchoHandler)
