@@ -8,6 +8,8 @@ import socket
 import time
 import json
 import random
+import hashlib
+
 
 def log(File, Mensaje):
     with open(File, 'r') as fich:
@@ -54,9 +56,10 @@ with open('ua1.xml', 'r') as fich_client:
     audio_path = lineas[6].split()[1].split('"')[1]
 
 LINE2 = 'INVITE' + ' ' + 'sip:' + usuario3 + ':' + puerto_proxy3 + ' ' + 'SIP/2.0\r\n' + 'Content-Type: application/sdp' + '\r\n\r\n'
-LINE2 += 'v=0' + '\r\n' + 'o=' + usuario3 + ' ' + ip_server3 + '\r\n' +  's=misesion' + '\r\n' +  't=0' + '\r\n' + 'm=audio' + ' ' + puerto_rtp + ' ' + 'RTP'
+LINE2 += 'v=0' + '\r\n' + 'o=' + usuario3 + ' ' + ip_server3 + '\r\n' + 's=misesion' + '\r\n' + 't=0' + '\r\n' + 'm=audio' + ' ' + puerto_rtp + ' ' + 'RTP'
 LINE3 = 'ACK ' + 'sip:' + usuario3 + ' ' + 'SIP/2.0' + '\r\n\r\n'
 LINE4 = 'BYE ' + 'sip:' + usuario3 + ' ' + 'SIP/2.0' + '\r\n\r\n'
+
 
 class EchoHandler(socketserver.DatagramRequestHandler):
     """
@@ -73,21 +76,20 @@ class EchoHandler(socketserver.DatagramRequestHandler):
             linea_lista = linea.split()
             ip_cliente = self.client_address[0]
             puerto_cliente = self.client_address[1]
-
+            nonce = random.getrandbits(100)
             print("El cliente nos manda " + line.decode('utf-8'))
             if not line:
                 break
             if linea_lista[0] == 'REGISTER' and len(linea_lista) == 5:
-                print(linea_lista)
                 log(log_path2, 'Starting ... \r\n')
                 log(log_path2, 'Recived from ' + ip_cliente + ':' + linea_lista[1].split(':')[2] + ' ' + ' '.join(linea.split('\r\n')) + '\r\n')
-                nonce = random.getrandbits(80)
                 self.wfile.write(b'SIP/2.1 401 Unauthorized' + b'\r\n')
                 self.wfile.write(b'WWW Authenticate: nonce = ' + bytes(str(nonce), 'utf-8') + b'\r\n\r\n')
-                log(log_path2, 'Sent to ' + ip_cliente + ':' + puerto_cliente + ' ' + ' '.join('SIP/2.0 200 OK'.split('\r\n')) + '\r\n')
                 self.noncelib[linea_lista[1].split(':')[1]] = nonce
             if linea_lista[0] == 'REGISTER' and len(linea_lista) == 7:
+                log(log_path2, 'Recived from ' + ip_cliente + ':' + linea_lista[1].split(':')[2] + ' ' + ' '.join(linea.split('\r\n')) + '\r\n')
                 self.wfile.write(b'SIP/2.0 200 OK' + b'\r\n\r\n')
+                log(log_path2, 'Sent to ' + ip_cliente + ':' + str(puerto_cliente) + ' ' + ' '.join('SIP/2.0 200 OK'.split('\r\n')) + '\r\n')
                 if linea_lista[4] == '0':
                     (registro, direccion, mensaje, expires, tiempo, autorizacion, response) = linea_lista
                     del self.dicc[direccion]
@@ -117,12 +119,12 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 if RCV == ['SIP/2.0 100 Trying', '', 'SIP/2.0 180 Ring', '', 'SIP/2.0 200 OK']:
                     log(log_path2, 'Sent to ' + ip_cliente + ':' + str(puerto_cliente) + ' ' + ' '.join(datos_lista) + '\r\n')
                     mensaje = self.wfile.write(b'SIP/2.0 100 Trying' + b'\r\n\r\n' + b'SIP/2.0 180 Ring' + b'\r\n\r\n' + b'SIP/2.0 200 OK' + b'\r\n')
-                    mensaje += self.wfile.write((bytes(linea_lista[3] + ' ' +  linea_lista[4], 'utf-8')) + b'\r\n\r\n')
+                    mensaje += self.wfile.write((bytes(linea_lista[3] + ' ' + linea_lista[4], 'utf-8')) + b'\r\n\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[5], 'utf-8')) + b'\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[6] + ' ' + linea_lista[7], 'utf-8')) + b'\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[8], 'utf-8')) + b'\r\n')
                     mensaje += self.wfile.write((bytes(linea_lista[9], 'utf-8')) + b'\r\n')
-                    mensaje += self.wfile.write((bytes(linea_lista[10] + ' ' + puerto_rtp3 + ' ' + linea_lista[12] , 'utf-8')) + b'\r\n\r\n')
+                    mensaje += self.wfile.write((bytes(linea_lista[10] + ' ' + puerto_rtp3 + ' ' + linea_lista[12], 'utf-8')) + b'\r\n\r\n')
 
             if linea_lista[0] == 'ACK':
                 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -147,8 +149,6 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 log(log_path2, 'Recived from ' + ip_server3 + ':' + puerto_server3 + ' ' + ' '.join(datos_lista) + '\r\n')
                 log(log_path2, 'Sent to ' + ip_cliente + ':' + str(puerto_cliente) + ' ' + ' '.join(datos_lista) + '\r\n')
                 RCV = datos_lista[0:1]
-
-                
                 if RCV == ['SIP/2.0 200 OK']:
                     mensaje = self.wfile.write(b'SIP/2.0 200 OK' + b'\r\n\r\n')
 
