@@ -5,6 +5,8 @@ import socket
 import sys
 import os
 import time
+import hashlib
+
 
 def log(File, Mensaje):
     with open(File, 'r') as fich:
@@ -33,16 +35,19 @@ with open(CONFIG, 'r') as file1:
     ip_proxy = lineas[4].split()[1].split('"')[1]
     puerto_proxy = lineas[4].split()[2].split('"')[1]
     log_path = lineas[5].split()[1].split('"')[1]
-    print(log_path)
     audio_path = lineas[6].split()[1].split('"')[1]
 
     dicc = {}
 
 # Contenido que vamos a enviar
-LINE1 = METODO + ' ' + 'sip:' + usuario + ':' + puerto_server + ' ' + 'SIP/2.0\r\n'
+LINE1 = METODO + ' ' + 'sip:' + usuario + ':' + puerto_server
+LINE1 += ' ' + 'SIP/2.0\r\n'
 AUTORIZACION = 'Authorization: response="123123"'
-LINE2 = METODO + ' ' + 'sip:' + OPCION + ' ' + 'SIP/2.0\r\n' + 'Content-Type: application/sdp' + '\r\n\r\n'
-LINE2 += 'v=0' + '\r\n' + 'o=' + usuario + ' ' + ip_server + '\r\n' +  's=misesion' + '\r\n' +  't=0' + '\r\n' + 'm=audio' + ' ' + puerto_rtp + ' ' + 'RTP'
+LINE2 = METODO + ' ' + 'sip:' + OPCION
+LINE2 += ' ' + 'SIP/2.0\r\n' + 'Content-Type: application/sdp' + '\r\n\r\n'
+LINE2 += 'v=0' + '\r\n' + 'o=' + usuario + ' ' + ip_server + '\r\n'
+LINE2 += 's=misesion' + '\r\n' + 't=0' + '\r\n'
+LINE2 += 'm=audio' + ' ' + puerto_rtp + ' ' + 'RTP'
 LINE3 = 'ACK ' + 'sip:' + OPCION + ' ' + 'SIP/2.0' + '\r\n\r\n'
 LINE4 = 'BYE ' + 'sip:' + OPCION + ' ' + 'SIP/2.0' + '\r\n\r\n'
 # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
@@ -59,14 +64,17 @@ if METODO == 'REGISTER':
     data = my_socket.recv(1024)
     datos = data.decode('utf-8')
     datos_lista = datos.split('\r\n')
-    print(datos_lista)
     RCV = datos_lista[0:1]
     print('Recibido -- ', datos)
 
-
     if RCV == ['SIP/2.1 401 Unauthorized']:
         print("Enviando: " + METODO)
-        my_socket.send((bytes(LINE1, 'utf-8') + bytes('Expires:' + ' ' + str(OPCION), 'utf-8') + b'\r\n' + bytes(AUTORIZACION, 'utf-8') + b'\r\n\r\n'))
+        nonce = datos_lista[1].split('=')[1]
+        m = hashlib.md5()
+        print(passwd + nonce)
+        m.update(bytes(passwd + nonce.strip(), 'utf-8'))
+        response = m.hexdigest()
+        my_socket.send((bytes(LINE1, 'utf-8') + bytes('Expires:' + ' ' + str(OPCION), 'utf-8') + b'\r\nAuthorization: response=' + bytes(response, 'utf-8') + b'\r\n\r\n'))
         data = my_socket.recv(1024)
         datos = data.decode('utf-8')
         datos_lista = datos.split('\r\n')
@@ -83,9 +91,12 @@ if METODO == 'INVITE':
     log(log_path, 'Recived from ' + ip_proxy + ':' + puerto_proxy + ' ' + ' '.join(datos_lista) + '\r\n')
     print('Recibido -- ', datos)
     RCV = datos_lista[0:5]
-    dicc[datos_lista[8].split('=')[1].split()[0]] = [datos_lista[11].split()[1], datos_lista[8].split()[1]]
+
+    if datos_lista[0:1] == ['SIP/2.0 404 User not Found']:
+        pass
 
     if RCV == ['SIP/2.0 100 Trying', '', 'SIP/2.0 180 Ring', '', 'SIP/2.0 200 OK']:
+        dicc[datos_lista[8].split('=')[1].split()[0]] = [datos_lista[11].split()[1], datos_lista[8].split()[1]]
         log(log_path, 'Sent to ' + ip_proxy + ':' + puerto_proxy + ' ' + ' '.join(LINE3.split('\r\n')) + '\r\n')
         print("Enviando: " + 'ACK')
         my_socket.send(bytes(LINE3, 'utf-8'))
@@ -107,8 +118,6 @@ if METODO == 'BYE':
     datos_lista = datos.split('\r\n')
     log(log_path, 'Recived from ' + ip_proxy + ':' + puerto_proxy + ' ' + ' '.join(datos_lista) + '\r\n')
     print('Recibido -- ', datos)
-            
-
 print("Terminando socket...")
 # Cerramos todo
 my_socket.close()
