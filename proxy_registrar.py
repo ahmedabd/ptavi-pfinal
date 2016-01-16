@@ -93,7 +93,7 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                     self.dicc[direccion] = [ip, time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time() + int(tiempo)))]
                     self.register2json()
             if linea_lista[0] == 'INVITE':
-                with open('database.txt', 'r') as fich:
+                with open(data_path, 'r') as fich:
                     lineas = fich.readlines()
                     Found = False
                     count = 0
@@ -139,7 +139,7 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                     self.wfile.write(b'SIP/2.0 404 User not Found' + b'\r\n\r\n')
 
             if linea_lista[0] == 'ACK':
-                with open('database.txt', 'r') as fich:
+                with open(data_path, 'r') as fich:
                     lineas = fich.readlines()
                     Found = False
                     count = 0
@@ -166,7 +166,7 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                     my_socket.send(bytes(LINE3, 'utf-8') + b'\r\n\r\n')
                     log(log_path2, 'Sent to ' + ip + ':' + puerto_2 + ' ' + ' '.join(linea.split('\r\n')) + '\r\n')
             if linea_lista[0] == 'BYE':
-                with open('database.txt', 'r') as fich:
+                with open(data_path, 'r') as fich:
                     lineas = fich.readlines()
                     Found = False
                     count = 0
