@@ -38,15 +38,14 @@ class EchoHandler(socketserver.DatagramRequestHandler):
             if not line:
                 break
             if linea_lista[0] == 'INVITE':
-                print(linea_lista)
                 mensaje = self.wfile.write(b'SIP/2.0 100 Trying' + b'\r\n\r\n' + b'SIP/2.0 180 Ring' + b'\r\n\r\n' + b'SIP/2.0 200 OK' + b'\r\n')
                 mensaje += self.wfile.write((bytes(linea_lista[3] + linea_lista[4], 'utf-8')) + b'\r\n\r\n')
                 mensaje += self.wfile.write((bytes(linea_lista[5], 'utf-8')) + b'\r\n')
-                mensaje += self.wfile.write((bytes(linea_lista[6] + ' ' + linea_lista[7], 'utf-8')) + b'\r\n')
+                mensaje += self.wfile.write((bytes(linea_lista[1].split(':')[1] + ' ' + linea_lista[7], 'utf-8')) + b'\r\n')
                 mensaje += self.wfile.write((bytes(linea_lista[8], 'utf-8')) + b'\r\n')
                 mensaje += self.wfile.write((bytes(linea_lista[9], 'utf-8')) + b'\r\n')
                 mensaje += self.wfile.write((bytes(linea_lista[10] + ' ' + puerto_rtp + ' ' + linea_lista[12], 'utf-8')) + b'\r\n\r\n')
-                self.dicc[linea_lista[6].split('=')[1]] = [linea_lista[11], linea_lista[7]]
+                self.dicc[linea_lista[1].split(':')[1]] = [linea_lista[11], linea_lista[7]]
             if linea_lista[0] == 'ACK':
                 [puerto_receptor, ip_receptor] = self.dicc[linea_lista[1].split(':')[1]]
                 aEjecutar = './mp32rtp -i ' + ip_receptor + ' ' '-p ' + str(puerto_receptor) + ' ' + '< ' + FICH_AUDIO
